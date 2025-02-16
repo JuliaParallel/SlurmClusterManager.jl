@@ -3,10 +3,14 @@
 # https://github.com/JuliaLang/julia/pull/42080
 import SlurmClusterManager
 import Distributed
+import InteractiveUtils
 import Test
 
 # Bring some names into scope, just for convenience:
 using Test: @testset, @test
+
+# Print Julia version info:
+InteractiveUtils.versioninfo()
 
 const original_JULIA_DEBUG = strip(get(ENV, "JULIA_DEBUG", ""))
 if isempty(original_JULIA_DEBUG)
