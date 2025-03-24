@@ -44,22 +44,35 @@ end
 
 @static if Base.VERSION >= v"1.9.0"
   # In Julia 1.9 and later, the no-argument method `Distributed.default_addprocs_params()`
-  # includes :env, so we don't need to do anything.
+  # includes :env.
   # See also: https://github.com/JuliaLang/julia/blob/v1.9.0/stdlib/Distributed/src/cluster.jl#L526-L541
+  #
+  # So we don't need to add `:env`
+  # But we do still need to add `:custom_worker_flag`
 
-  Distributed.default_addprocs_params(::SlurmManager) = Distributed.default_addprocs_params()
+  function Distributed.default_addprocs_params(::SlurmManager)
+    our_stuff = Dict{Symbol,Any}(
+      :custom_worker_flag => `--worker`,
+    )
+    upstreams_stuff = Distributed.default_addprocs_params()
+    total_stuff = merge(our_stuff, upstreams_stuff)
+    return total_stuff
+  end
 elseif v"1.6.0" <= Base.VERSION < v"1.9.0"
   # In Julia 1.6 through 1.8, the no-argument method `Distributed.default_addprocs_params()`
   # does not include :env. However, Julia does allow us to add a specialized method
   # `Distributed.default_addprocs_params(::SlurmManager)`, so we do so here.
   #
   # The ability to add the specialized `Distributed.default_addprocs_params(::SlurmManager)`
-  # method was added to Julia in https://github.com/JuliaLang/julia/pull/38570
+  # method was added to Julia in https://github.com/JuliaLang/julia/pull/38570,
+  # which corresponds to https://github.com/JuliaLang/julia/commit/687378ebfd1188ee7af302ec089cf3d31689647c,
+  # which is in Julia 1.6 and later.
   #
   # See also: https://github.com/JuliaLang/julia/blob/v1.8.0/stdlib/Distributed/src/cluster.jl#L526-L540
   function Distributed.default_addprocs_params(::SlurmManager)
     our_stuff = Dict{Symbol,Any}(
       :env => [],
+      :custom_worker_flag => `--worker`,
     )
     upstreams_stuff = Distributed.default_addprocs_params()
     total_stuff = merge(our_stuff, upstreams_stuff)
@@ -69,6 +82,10 @@ elseif Base.VERSION < v"1.6.0"
   # In Julia 1.5 and earlier, Julia does not have the `addenv()` function.
   # I don't want to add a dependency on Compat.jl just for this one feature,
   # so we will just choose to not support `params[:env]` on Julia 1.5 and earlier.
+  #
+  # Also, in Julia 1.5 and earlier, Julia does not have the
+  # ability to add the specialized `Distributed.default_addprocs_params(::SlurmManager)`
+  # method.
 end
 
 function _new_environment_additions(params_env::Dict{String, String})
@@ -142,6 +159,23 @@ function warn_if_unexpected_params(params::Dict)
                    # and there is no problem.
                 end
             end
+        elseif k == :custom_worker_flag
+            # We special-case `:custom_worker_flag`, because our support status depends on the Julia version
+            if v == `--worker`
+                # Either the user didn't provide the `:env` kwarg,
+                # or the user provided `custom_worker_flag=`--worker``.
+                #
+                # Either way, in this case, we don't print a log message.
+                # @debug "k == :custom_worker_flag and v == `--worker`" k v
+            else
+                # In this case, the user has provided the `:custom_worker_flag` kwarg, and it is something other than `--worker`.
+                if Base.VERSION < v"1.6.0"
+                   @warn "The user provided the `custom_worker_flag` kwarg, but SlurmClusterManager.jl's support for the `custom_worker_flag` kwarg requires Julia 1.6 or later" Base.VERSION
+                else
+                   # Here, the Julia version is >= 1.6, so we do support `:custom_worker_flag`,
+                   # and there is no problem.
+                end
+            end
         elseif k in params_that_we_support
             # We support this param, so no problem.
         else
@@ -179,9 +213,10 @@ function Distributed.launch(manager::SlurmManager, params::Dict, instances_arr::
         exename = params[:exename]
         exeflags = params[:exeflags]
 
-        _srun_cmd_without_env = `srun -D $exehome $exename $exeflags --worker`
-
         @static if Base.VERSION >= v"1.6.0"
+          custom_worker_flag = params[:custom_worker_flag]
+          _srun_cmd_without_env = `srun -D $exehome $exename $exeflags $custom_worker_flag`
+
           # Pass the key-value pairs from `params[:env]` to the `srun` command:
           env2 = _new_environment_additions(Dict{String,String}(params[:env]))
           srun_cmd_with_env = addenv(_srun_cmd_without_env, env2)
@@ -190,7 +225,11 @@ function Distributed.launch(manager::SlurmManager, params::Dict, instances_arr::
           if haskey(params, :env)
             @warn "SlurmClusterManager.jl does not support params[:env] on Julia 1.5 and earlier" Base.VERSION
           end
-          srun_cmd_with_env = _srun_cmd_without_env
+          if haskey(params, :custom_worker_flag)
+            @warn "SlurmClusterManager.jl does not support params[:custom_worker_flag] on Julia 1.5 and earlier" Base.VERSION
+          end
+
+          srun_cmd_with_env = `srun -D $exehome $exename $exeflags --worker`
         end
 
         # Pass cookie as stdin to srun; srun forwards stdin to process
