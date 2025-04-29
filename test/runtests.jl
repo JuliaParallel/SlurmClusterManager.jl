@@ -6,7 +6,7 @@ import Distributed
 import Test
 
 # Bring some names into scope, just for convenience:
-using Test: @testset, @test, @test_logs
+using Test: @testset, @test, @test_throws, @test_logs, @test_skip, @test_broken
 
 const original_JULIA_DEBUG = strip(get(ENV, "JULIA_DEBUG", ""))
 if isempty(original_JULIA_DEBUG)
@@ -71,5 +71,16 @@ end # testset "SlurmClusterManager.jl"
       (:warn, "The user provided the `env` kwarg, but SlurmClusterManager.jl's support for the `env` kwarg requires Julia 1.6 or later"),
       SlurmClusterManager.warn_if_unexpected_params(params),
     )
+  end
+end
+
+include("util.jl")
+
+@testset "Test some unhappy paths (error paths)" begin
+  @testset "intentionally fail" begin
+    include("error_path_intentionally_fail.jl")
+  end
+  @testset "manager's launch timeout" begin
+    include("error_path_manager_timeout.jl")
   end
 end
