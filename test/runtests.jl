@@ -6,7 +6,7 @@ import Distributed
 import Test
 
 # Bring some names into scope, just for convenience:
-using Test: @testset, @test
+using Test: @testset, @test, @test_logs
 
 const original_JULIA_DEBUG = strip(get(ENV, "JULIA_DEBUG", ""))
 if isempty(original_JULIA_DEBUG)
