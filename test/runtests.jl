@@ -6,7 +6,7 @@ import Distributed
 import Test
 
 # Bring some names into scope, just for convenience:
-using Test: @testset, @test
+using Test: @testset, @test, @test_logs
 
 const original_JULIA_DEBUG = strip(get(ENV, "JULIA_DEBUG", ""))
 if isempty(original_JULIA_DEBUG)
@@ -60,3 +60,16 @@ end
   println("# END script output")
 
 end # testset "SlurmClusterManager.jl"
+
+@testset "warn_if_unexpected_params()" begin
+  if Base.VERSION >= v"1.6"
+    # This test is not relevant for Julia 1.6+
+  else
+    params = Dict(:env => ["foo" => "bar"])
+    SlurmClusterManager.warn_if_unexpected_params(params)
+    @test_logs(
+      (:warn, "The user provided the `env` kwarg, but SlurmClusterManager.jl's support for the `env` kwarg requires Julia 1.6 or later"),
+      SlurmClusterManager.warn_if_unexpected_params(params),
+    )
+  end
+end
