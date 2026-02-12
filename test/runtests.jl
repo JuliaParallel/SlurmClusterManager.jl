@@ -84,3 +84,7 @@ include("util.jl")
     include("error_path_manager_timeout.jl")
   end
 end
+
+@testset "JET" begin
+  include("jet.jl")
+end
