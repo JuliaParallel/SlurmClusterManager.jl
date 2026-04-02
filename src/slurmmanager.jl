@@ -205,10 +205,12 @@ function Distributed.launch(manager::SlurmManager, params::Dict, instances_arr::
           line = readline(manager.srun_proc)
           m = match(r".*:(\d*)#(.*)", line)
           m === nothing && error("could not parse $line")
+          m[1] === nothing && error("could not extract port (m[1]) after parsing $line")
+          m[2] === nothing && error("could not extract host (m[2]) after parsing $line")
 
           config = WorkerConfig()
-          config.port = parse(Int, m[1])
-          config.host = strip(m[2])
+          config.port = parse(Int, m[1]::AbstractString)
+          config.host = strip(m[2]::AbstractString)
 
           @debug "Worker $i ready on host $(config.host), port $(config.port)"
 
