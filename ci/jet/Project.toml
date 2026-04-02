@@ -1,0 +1,9 @@
+[deps]
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+SlurmClusterManager = "c82cd089-7bf7-41d7-976b-6b5d413cbe0a"
+
+[sources]
+SlurmClusterManager = {path = "../.."}
+
+[compat]
+JET = "0.11"
