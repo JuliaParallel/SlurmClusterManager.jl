@@ -6,11 +6,17 @@ version = "1.1.0"
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[weakdeps]
+DistributedNext = "fab6aee4-877b-4bac-a744-3eca44acbb6f"
+
+[compat]
+Distributed = "< 0.0.1, 1"
+DistributedNext = "1"
+julia = "1.0"
+
 [extras]
+DistributedNext = "fab6aee4-877b-4bac-a744-3eca44acbb6f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-
-[compat]
-julia = "1.0"

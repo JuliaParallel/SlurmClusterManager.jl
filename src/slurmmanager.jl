@@ -172,6 +172,10 @@ function warn_if_unexpected_params(params::Dict)
 end
 
 function Distributed.launch(manager::SlurmManager, params::Dict, instances_arr::Array, c::Condition)
+  return launch_slurm(manager, params, instances_arr::Array, c::Condition)
+end
+
+function launch_slurm(manager::SlurmManager, params::Dict, instances_arr::Array, c::Condition)
     try
         warn_if_unexpected_params(params)
 
