@@ -25,7 +25,7 @@ jobs:
           - '1.10.7' # current LTS
           - '1.11.2' # currently the latest stable release
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -63,7 +63,7 @@ jobs:
   jet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@latest
         with:
           version: '1.12'
